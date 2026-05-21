@@ -8,6 +8,7 @@
 !.yarn/releases
 !.yarn/versions
 /.claude/
+pnpm-workspace.yaml
 
 # testing
 /coverage
