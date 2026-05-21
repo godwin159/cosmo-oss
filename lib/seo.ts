@@ -23,6 +23,15 @@ export const siteConfig = {
   description:
     "Tune count, size, and speed for live particle motion. Preview on the canvas, then copy the snippet.",
   tagline: "Interactive particle motion playground",
+  // Open Graph / social share image.
+  // Placeholder lives at public/og.png — replace that file with your own
+  // 1200×630 image (keep the same path and dimensions).
+  ogImage: {
+    url: "/og.png",
+    width: 1200,
+    height: 630,
+    alt: "Cosmo Playground — interactive particle motion playground",
+  },
   keywords: [
     "particle animation",
     "motion library",
