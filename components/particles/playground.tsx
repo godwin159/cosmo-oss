@@ -71,17 +71,9 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import {
-  animate,
-  motion,
-  useMotionValue,
-  useMotionValueEvent,
-  useVelocity,
-  useSpring,
-  useTransform,
-  type MotionValue,
-} from "motion/react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { useTheme } from "@/components/theme-provider";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { ColorPickerPopover } from "@/components/ui/color-picker-popover";
@@ -289,8 +281,6 @@ const DEFAULT_SETTINGS: Settings = {
   gradientAngle: 135,
   gradientMidStops: [],
 };
-
-const MAX_GRADIENT_MID_STOPS = 2;
 
 function getGradientStops(s: Settings): string[] {
   const mids = Array.isArray(s.gradientMidStops) ? s.gradientMidStops : [];
@@ -1337,17 +1327,19 @@ export function ParticlePlayground() {
                       </button>
                     </PopoverContent>
                   </Popover>
-                  <div className="flex items-center gap-1.5">
-                    <AngleDial
-                      value={settings.gradientAngle}
-                      onChange={(v) => setSettings((s) => ({ ...s, gradientAngle: v }))}
-                    />
-                    <span className="min-w-[2.5rem] text-right font-mono text-[11px] tabular-nums text-[var(--ls-muted-foreground)]">
-                      {settings.gradientAngle}°
-                    </span>
-                  </div>
+                  <AngleField
+                    value={settings.gradientAngle}
+                    onChange={(v) => setSettings((s) => ({ ...s, gradientAngle: v }))}
+                  />
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div
+                  className="grid gap-1.5"
+                  style={{
+                    gridTemplateColumns: `repeat(${
+                      2 + settings.gradientMidStops.length
+                    }, minmax(0, 1fr))`,
+                  }}
+                >
                   {(() => {
                     const stops = getGradientStops(settings);
                     const handleSwap = (a: number, b: number) => {
@@ -1373,68 +1365,32 @@ export function ParticlePlayground() {
                         onDropStop={(target) => handleSwap(0, target)}
                       />
                     );
-                    for (let idx = 0; idx < MAX_GRADIENT_MID_STOPS; idx++) {
-                      const value = settings.gradientMidStops[idx];
+                    settings.gradientMidStops.forEach((value, idx) => {
                       const stopIndex = idx + 1;
-                      if (value !== undefined) {
-                        cards.push(
-                          <SwatchRow
-                            key={`mid-${idx}`}
-                            label="—"
-                            value={value}
-                            onChange={(v) =>
-                              setSettings((s) => {
-                                const next = [...s.gradientMidStops];
-                                next[idx] = v;
-                                return { ...s, gradientMidStops: next };
-                              })
-                            }
-                            onRemove={() =>
-                              setSettings((s) => ({
-                                ...s,
-                                gradientMidStops: s.gradientMidStops.filter((_, i) => i !== idx),
-                              }))
-                            }
-                            dragIndex={stopIndex}
-                            onDragStartStop={() => {}}
-                            onDropStop={(target) => handleSwap(stopIndex, target)}
-                          />
-                        );
-                      } else {
-                        const nextStopExists = settings.gradientMidStops[idx - 1] !== undefined;
-                        const enabled = idx === 0 || nextStopExists;
-                        cards.push(
-                          <button
-                            key={`mid-${idx}`}
-                            type="button"
-                            disabled={!enabled}
-                            onClick={() => {
-                              const mid = blendHex(
-                                settings.gradientFrom,
-                                settings.gradientTo,
-                                0.5
-                              );
-                              setSettings((s) => ({
-                                ...s,
-                                gradientMidStops: [...s.gradientMidStops, mid].slice(
-                                  0,
-                                  MAX_GRADIENT_MID_STOPS
-                                ),
-                              }));
-                            }}
-                            title={
-                              enabled
-                                ? "Add an intermediate gradient stop"
-                                : "Add the previous stop first"
-                            }
-                            aria-label="Add gradient stop"
-                            className="flex h-full min-h-[44px] w-full items-center justify-center rounded-md border border-dashed border-[var(--ls-border)] bg-[var(--ls-card)] text-[var(--ls-muted-foreground)] transition-colors hover:border-white/40 hover:bg-[var(--ls-border)]/30 hover:text-[var(--ls-foreground)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-[var(--ls-card)]"
-                          >
-                            <Plus size={14} />
-                          </button>
-                        );
-                      }
-                    }
+                      cards.push(
+                        <SwatchRow
+                          key={`mid-${idx}`}
+                          label="—"
+                          value={value}
+                          onChange={(v) =>
+                            setSettings((s) => {
+                              const next = [...s.gradientMidStops];
+                              next[idx] = v;
+                              return { ...s, gradientMidStops: next };
+                            })
+                          }
+                          onRemove={() =>
+                            setSettings((s) => ({
+                              ...s,
+                              gradientMidStops: s.gradientMidStops.filter((_, i) => i !== idx),
+                            }))
+                          }
+                          dragIndex={stopIndex}
+                          onDragStartStop={() => {}}
+                          onDropStop={(target) => handleSwap(stopIndex, target)}
+                        />
+                      );
+                    });
                     const toIndex = stops.length - 1;
                     cards.push(
                       <SwatchRow
@@ -1478,7 +1434,7 @@ export function ParticlePlayground() {
           </div>
 
           <SectionHeading title="Particles" subtitle="Density and motion." />
-          <TickSlider
+          <SliderControl
             label="Particles"
             value={settings.count}
             min={200}
@@ -1487,7 +1443,7 @@ export function ParticlePlayground() {
             editable
             onChange={(v) => setSettings((s) => ({ ...s, count: v }))}
           />
-          <TickSlider
+          <SliderControl
             label="Size"
             value={settings.size}
             min={0.5}
@@ -1496,7 +1452,7 @@ export function ParticlePlayground() {
             unit="px"
             onChange={(v) => setSettings((s) => ({ ...s, size: v }))}
           />
-          <TickSlider
+          <SliderControl
             label="Speed"
             value={settings.speed}
             min={0.2}
@@ -1504,7 +1460,7 @@ export function ParticlePlayground() {
             step={0.05}
             onChange={(v) => setSettings((s) => ({ ...s, speed: v }))}
           />
-          <TickSlider
+          <SliderControl
             label="Drift"
             value={settings.drift}
             min={0}
@@ -1703,7 +1659,7 @@ export function ParticlePlayground() {
             </p>
           </div>
 
-          <TickSlider
+          <SliderControl
             label="Radius"
             value={settings.mouseRadius}
             min={0}
@@ -1712,7 +1668,7 @@ export function ParticlePlayground() {
             unit="px"
             onChange={(v) => setSettings((s) => ({ ...s, mouseRadius: v }))}
           />
-          <TickSlider
+          <SliderControl
             label="Force"
             value={settings.mouseForce}
             min={0}
@@ -1733,7 +1689,7 @@ export function ParticlePlayground() {
               on={settings.glow}
               onToggle={(v) => setSettings((s) => ({ ...s, glow: v }))}
               slider={
-                <TickSlider
+                <SliderControl
                   label="Strength"
                   value={settings.glowStrength}
                   min={0.1}
@@ -1749,7 +1705,7 @@ export function ParticlePlayground() {
               on={settings.twinkle}
               onToggle={(v) => setSettings((s) => ({ ...s, twinkle: v }))}
               slider={
-                <TickSlider
+                <SliderControl
                   label="Speed"
                   value={settings.twinkleSpeed}
                   min={0.2}
@@ -1765,7 +1721,7 @@ export function ParticlePlayground() {
               on={settings.hueCycle}
               onToggle={(v) => setSettings((s) => ({ ...s, hueCycle: v }))}
               slider={
-                <TickSlider
+                <SliderControl
                   label="Speed"
                   value={settings.hueSpeed}
                   min={0.02}
@@ -1781,7 +1737,7 @@ export function ParticlePlayground() {
               on={settings.trails}
               onToggle={(v) => setSettings((s) => ({ ...s, trails: v }))}
               slider={
-                <TickSlider
+                <SliderControl
                   label="Fade"
                   value={settings.trailFade}
                   min={0.03}
@@ -1797,7 +1753,7 @@ export function ParticlePlayground() {
               on={settings.constellation}
               onToggle={(v) => setSettings((s) => ({ ...s, constellation: v }))}
               slider={
-                <TickSlider
+                <SliderControl
                   label="Distance"
                   value={settings.constellationDist}
                   min={20}
@@ -2192,124 +2148,53 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle?: string 
   );
 }
 
-function AngleDial({
+function AngleField({
   value,
   onChange,
-  size = 32,
 }: {
   value: number;
   onChange: (v: number) => void;
-  size?: number;
 }) {
-  const ref = React.useRef<HTMLDivElement | null>(null);
-  const [dragging, setDragging] = React.useState(false);
+  const [draft, setDraft] = React.useState(String(value));
 
-  const setFromEvent = React.useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const el = ref.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      let angle = (Math.atan2(dx, -dy) * 180) / Math.PI;
-      if (angle < 0) angle += 360;
-      if (e.shiftKey) angle = Math.round(angle / 15) * 15;
-      else angle = Math.round(angle);
-      onChange(angle % 360);
-    },
-    [onChange]
-  );
+  React.useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDragging(true);
-    setFromEvent(e);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.buttons === 0) return;
-    setFromEvent(e);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+  const commit = () => {
+    const n = Number(draft);
+    if (Number.isFinite(n) && draft.trim() !== "") {
+      const next = ((Math.round(n) % 360) + 360) % 360;
+      onChange(next);
+      setDraft(String(next));
+    } else {
+      setDraft(String(value));
     }
-    setDragging(false);
   };
-
-  const rad = (value * Math.PI) / 180;
-  const tipX = Math.sin(rad);
-  const tipY = -Math.cos(rad);
 
   return (
-    <div
-      ref={ref}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      role="slider"
-      aria-label="Gradient angle"
-      aria-valuemin={0}
-      aria-valuemax={359}
-      aria-valuenow={value}
-      title={`Gradient angle: ${value}° (drag, Shift = snap 15°)`}
-      className="relative shrink-0 cursor-grab touch-none rounded-full border border-[var(--ls-border)] bg-[var(--ls-card)] transition-colors hover:bg-[var(--ls-border)]/40 active:cursor-grabbing"
-      style={{ width: size, height: size }}
-    >
-      {dragging && (
-        <div
-          className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md border border-[var(--ls-border)] bg-[var(--ls-card)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[var(--ls-foreground)] shadow-lg"
-          style={{ bottom: `calc(100% + 6px)` }}
-        >
-          {value}°
-        </div>
-      )}
-      <svg
-        viewBox="-1 -1 2 2"
-        className="absolute inset-0 h-full w-full text-[var(--ls-foreground)]"
-      >
-        <defs>
-          <radialGradient id="angle-tip" cx="35%" cy="28%" r="70%">
-            <stop offset="0%" stopColor="#fda4af" />
-            <stop offset="45%" stopColor="#f43f5e" />
-            <stop offset="100%" stopColor="#881337" />
-          </radialGradient>
-          <radialGradient id="angle-tip-spec" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.9)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-          </radialGradient>
-        </defs>
-        <circle cx="0" cy="0" r="0.92" fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="0.06" />
-        <line
-          x1="0"
-          y1="0"
-          x2={tipX * 0.8}
-          y2={tipY * 0.8}
-          stroke="currentColor"
-          strokeWidth="0.18"
-          strokeLinecap="round"
-        />
-        <circle
-          cx={tipX * 0.8}
-          cy={tipY * 0.8}
-          r="0.2"
-          fill="rgba(0,0,0,0.45)"
-          transform={`translate(${tipX * 0.02} ${tipY * 0.02 + 0.04})`}
-        />
-        <circle cx={tipX * 0.8} cy={tipY * 0.8} r="0.19" fill="url(#angle-tip)" stroke="#881337" strokeWidth="0.02" />
-        <ellipse
-          cx={tipX * 0.8 - 0.06}
-          cy={tipY * 0.8 - 0.07}
-          rx="0.09"
-          ry="0.06"
-          fill="url(#angle-tip-spec)"
-        />
-        <circle cx="0" cy="0" r="0.1" fill="currentColor" fillOpacity="0.4" />
-      </svg>
+    <div className="relative w-20">
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={359}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          else if (e.key === "Escape") {
+            setDraft(String(value));
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        aria-label="Gradient angle"
+        className="h-8 pr-6 font-mono text-xs tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--ls-muted-foreground)]">
+        °
+      </span>
     </div>
   );
 }
@@ -2565,14 +2450,6 @@ function SwatchRow({
   );
 }
 
-function blendHex(a: string, b: string, t: number): string {
-  const ra = hexToRgb(a);
-  const rb = hexToRgb(b);
-  const mix = (x: number, y: number) => Math.round(x + (y - x) * t);
-  const toHex = (n: number) => n.toString(16).padStart(2, "0");
-  return `#${toHex(mix(ra.r, rb.r))}${toHex(mix(ra.g, rb.g))}${toHex(mix(ra.b, rb.b))}`;
-}
-
 const SIZE_PRESETS: { label: string; value: number }[] = [
   { label: "S", value: 0.4 },
   { label: "M", value: 0.7 },
@@ -2611,7 +2488,7 @@ function SizeControl({
           );
         })}
       </div>
-      <DialSlider
+      <SliderControl
         label={label}
         value={value}
         min={0.2}
@@ -2877,7 +2754,7 @@ function fileMatchesAcceptType(item: DataTransferItem, accept: string): boolean 
   });
 }
 
-function TickSlider({
+function SliderControl({
   label,
   value,
   min,
@@ -2886,7 +2763,6 @@ function TickSlider({
   unit,
   onChange,
   editable,
-  warnAbove,
 }: {
   label: string;
   value: number;
@@ -2898,194 +2774,6 @@ function TickSlider({
   editable?: boolean;
   warnAbove?: number;
 }) {
-  const isWarn = warnAbove !== undefined && value > warnAbove;
-  const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
-  const decimals = step >= 1 ? 0 : step.toString().split(".")[1]?.length ?? 1;
-  const display = value.toFixed(decimals);
-  const tickCount = 36;
-
-  const [editing, setEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState(display);
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
-
-  React.useEffect(() => {
-    if (!editing) setDraft(display);
-  }, [display, editing]);
-
-  const commit = () => {
-    const n = Number(draft);
-    if (Number.isFinite(n)) {
-      const clamped = Math.min(max, Math.max(min, n));
-      onChange(clamped);
-      setDraft(clamped.toFixed(decimals));
-    } else {
-      setDraft(display);
-    }
-    setEditing(false);
-  };
-
-  const pctMV = useMotionValue(pct);
-  React.useEffect(() => {
-    pctMV.set(pct);
-  }, [pct, pctMV]);
-
-  const rawVelocity = useVelocity(pctMV);
-  const smoothVelocity = useSpring(rawVelocity, {
-    stiffness: 300,
-    damping: 18,
-    mass: 0.4,
-  });
-
-  const indicatorScaleY = useTransform(smoothVelocity, (v) =>
-    1 + Math.min(Math.abs(v) / 260, 1) * 0.9
-  );
-
-  return (
-    <div className="group flex items-center gap-3 rounded-full border border-[var(--ls-border)] bg-[var(--ls-card)] px-3.5 py-2 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.18),0_2px_6px_-3px_rgba(0,0,0,0.18)] transition-shadow hover:shadow-[0_2px_4px_-2px_rgba(0,0,0,0.22),0_4px_10px_-4px_rgba(0,0,0,0.22)]">
-      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ls-muted-foreground)]">
-        {label}
-      </span>
-      <div className="relative flex-1 h-5">
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 flex h-3 -translate-y-1/2 items-stretch justify-between">
-          {Array.from({ length: tickCount }).map((_, i) => (
-            <Tick
-              key={i}
-              index={i}
-              tickCount={tickCount}
-              pctMV={pctMV}
-              velocity={smoothVelocity}
-            />
-          ))}
-        </div>
-        <motion.div
-          className="pointer-events-none absolute top-1/2 h-4 w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-[1px] transition-[background-color,box-shadow] duration-200"
-          style={{
-            left: `${pct}%`,
-            scale: indicatorScaleY,
-            transformOrigin: "50% 50%",
-            backgroundColor: isWarn ? "oklch(0.78 0.19 60)" : "oklch(0.72 0.24 5)",
-            boxShadow: isWarn
-              ? "0 0 4px oklch(0.78 0.19 60 / 0.9), 0 0 10px oklch(0.78 0.19 60 / 0.55)"
-              : "0 0 4px oklch(0.72 0.24 5 / 0.9), 0 0 10px oklch(0.72 0.24 5 / 0.55)",
-          }}
-        />
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0"
-          aria-label={label}
-        />
-      </div>
-      {editable ? (
-        editing ? (
-          <div className="flex shrink-0 items-center gap-0.5 rounded border border-white/30 bg-[var(--ls-card)] px-1.5 py-0.5 font-mono text-xs text-[var(--ls-foreground)]">
-            <input
-              ref={inputRef}
-              type="number"
-              min={min}
-              max={max}
-              step={step}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={commit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                else if (e.key === "Escape") {
-                  setDraft(display);
-                  setEditing(false);
-                }
-              }}
-              autoFocus
-              className="w-14 bg-transparent text-right tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            {unit && <span className="text-[var(--ls-muted-foreground)]">{unit}</span>}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(display);
-              setEditing(true);
-              requestAnimationFrame(() => inputRef.current?.focus());
-            }}
-            className="shrink-0 cursor-text font-mono text-xs tabular-nums text-[var(--ls-foreground)] hover:underline decoration-dotted underline-offset-2"
-            title="Click to edit"
-          >
-            {display}
-            {unit ? <span className="ml-0.5 text-[var(--ls-muted-foreground)]">{unit}</span> : null}
-          </button>
-        )
-      ) : (
-        <span className="shrink-0 font-mono text-xs tabular-nums text-[var(--ls-foreground)]">
-          {display}
-          {unit ? <span className="ml-0.5 text-[var(--ls-muted-foreground)]">{unit}</span> : null}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function Tick({
-  index,
-  tickCount,
-  pctMV,
-  velocity,
-}: {
-  index: number;
-  tickCount: number;
-  pctMV: MotionValue<number>;
-  velocity: MotionValue<number>;
-}) {
-  const tickPct = (index / (tickCount - 1)) * 100;
-
-  const scaleY = useTransform<number, number>(
-    [pctMV, velocity] as unknown as MotionValue<number>[],
-    (latest) => {
-      const [p, v] = latest as unknown as [number, number];
-      const dist = Math.abs(tickPct - p);
-      const intensity = Math.min(Math.abs(v) / 260, 1);
-      const sigma = 8 + intensity * 22;
-      const envelope = Math.exp(-(dist * dist) / (2 * sigma * sigma));
-      return 1 + envelope * intensity * 2.4;
-    }
-  );
-
-  const opacity = useTransform(pctMV, (p) => (tickPct <= p ? 0.7 : 0.15));
-
-  return (
-    <motion.span
-      className="w-px origin-center bg-[var(--ls-foreground)]"
-      style={{ scaleY, opacity }}
-    />
-  );
-}
-
-function DialSlider({
-  label,
-  value,
-  min,
-  max,
-  step,
-  unit,
-  onChange,
-  editable,
-  warnAbove,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  unit?: string;
-  onChange: (v: number) => void;
-  editable?: boolean;
-  warnAbove?: number;
-}) {
-  const isWarn = warnAbove !== undefined && value > warnAbove;
   const decimals = step >= 1 ? 0 : step.toString().split(".")[1]?.length ?? 1;
   const display = value.toFixed(decimals);
 
@@ -3109,162 +2797,20 @@ function DialSlider({
     setEditing(false);
   };
 
-  const tickSpacing = 5;
-  const numSteps = Math.max(1, Math.round((max - min) / step));
-  const stripWidth = numSteps * tickSpacing;
-
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const [viewportWidth, setViewportWidth] = React.useState(0);
-
-  React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    setViewportWidth(el.clientWidth);
-    const ro = new ResizeObserver((entries) => {
-      setViewportWidth(entries[0].contentRect.width);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const valueToX = React.useCallback(
-    (v: number) => viewportWidth / 2 - ((v - min) / step) * tickSpacing,
-    [viewportWidth, min, step]
-  );
-  const xToValue = React.useCallback(
-    (px: number) => min + ((viewportWidth / 2 - px) / tickSpacing) * step,
-    [viewportWidth, min, step]
-  );
-
-  const x = useMotionValue(0);
-  const draggingRef = React.useRef(false);
-  const syncingRef = React.useRef(false);
-  const lastSentRef = React.useRef(value);
-
-  React.useEffect(() => {
-    if (draggingRef.current) return;
-    if (viewportWidth === 0) return;
-    const target = valueToX(value);
-    if (Math.abs(x.get() - target) < 0.5) {
-      x.set(target);
-      lastSentRef.current = value;
-      return;
-    }
-    syncingRef.current = true;
-    const controls = animate(x, target, {
-      type: "spring",
-      stiffness: 320,
-      damping: 32,
-      mass: 0.5,
-    });
-    controls.then(() => {
-      syncingRef.current = false;
-      lastSentRef.current = value;
-    });
-    return () => {
-      controls.stop();
-      syncingRef.current = false;
-    };
-  }, [value, viewportWidth, valueToX, x]);
-
-  useMotionValueEvent(x, "change", (latest) => {
-    if (syncingRef.current) return;
-    const v = xToValue(latest);
-    const snapped = Math.round((v - min) / step) * step + min;
-    const clamped = Math.min(max, Math.max(min, snapped));
-    const rounded = Number(clamped.toFixed(decimals));
-    if (Math.abs(rounded - lastSentRef.current) >= step / 2) {
-      lastSentRef.current = rounded;
-      onChange(rounded);
-    }
-  });
-
-  const rawVelocity = useVelocity(x);
-  const smoothVelocity = useSpring(rawVelocity, {
-    stiffness: 300,
-    damping: 18,
-    mass: 0.4,
-  });
-  const indicatorScaleY = useTransform(smoothVelocity, (v) =>
-    1 + Math.min(Math.abs(v) / 1400, 1) * 0.9
-  );
-
-  const ready = viewportWidth > 0;
-  const leftConstraint = viewportWidth / 2 - stripWidth;
-  const rightConstraint = viewportWidth / 2;
-
   return (
-    <div className="group flex items-center gap-3 rounded-full border border-[var(--ls-border)] bg-[var(--ls-card)] px-3.5 py-2 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.18),0_2px_6px_-3px_rgba(0,0,0,0.18)] transition-shadow hover:shadow-[0_2px_4px_-2px_rgba(0,0,0,0.22),0_4px_10px_-4px_rgba(0,0,0,0.22)]">
+    <div className="group flex items-center gap-3 rounded-md border border-[var(--ls-border)] bg-[var(--ls-card)] px-3.5 py-2 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.18),0_2px_6px_-3px_rgba(0,0,0,0.18)] transition-shadow hover:shadow-[0_2px_4px_-2px_rgba(0,0,0,0.22),0_4px_10px_-4px_rgba(0,0,0,0.22)]">
       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ls-muted-foreground)]">
         {label}
       </span>
-      <div
-        ref={containerRef}
-        className="relative flex-1 h-5 cursor-grab overflow-hidden touch-none select-none active:cursor-grabbing"
-        role="slider"
+      <Slider
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={(vals) => onChange(vals[0])}
         aria-label={label}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={value}
-      >
-        {ready && (
-          <motion.div
-            className="absolute top-1/2 -translate-y-1/2 h-3"
-            style={{ x, width: stripWidth, left: 0 }}
-            drag="x"
-            dragConstraints={{ left: leftConstraint, right: rightConstraint }}
-            dragElastic={0.06}
-            dragMomentum
-            dragTransition={{
-              power: 0.22,
-              timeConstant: 260,
-              modifyTarget: (target) => {
-                const v = xToValue(target);
-                const snapped = Math.round((v - min) / step) * step + min;
-                const clamped = Math.min(max, Math.max(min, snapped));
-                return valueToX(clamped);
-              },
-            }}
-            onDragStart={() => {
-              draggingRef.current = true;
-            }}
-            onDragEnd={() => {
-              draggingRef.current = false;
-            }}
-          >
-            {Array.from({ length: numSteps + 1 }).map((_, i) => {
-              const isMajor = i % 10 === 0;
-              return (
-                <span
-                  key={i}
-                  className={
-                    "absolute top-1/2 w-px -translate-x-1/2 -translate-y-1/2 " +
-                    (isMajor
-                      ? "h-3 bg-[var(--ls-foreground)]/55"
-                      : "h-1.5 bg-[var(--ls-foreground)]/22")
-                  }
-                  style={{ left: i * tickSpacing }}
-                />
-              );
-            })}
-          </motion.div>
-        )}
-
-        <motion.div
-          className="pointer-events-none absolute top-1/2 left-1/2 h-4 w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-[1px] transition-[background-color,box-shadow] duration-200"
-          style={{
-            scale: indicatorScaleY,
-            transformOrigin: "50% 50%",
-            backgroundColor: isWarn ? "oklch(0.78 0.19 60)" : "oklch(0.72 0.24 5)",
-            boxShadow: isWarn
-              ? "0 0 4px oklch(0.78 0.19 60 / 0.9), 0 0 10px oklch(0.78 0.19 60 / 0.55)"
-              : "0 0 4px oklch(0.72 0.24 5 / 0.9), 0 0 10px oklch(0.72 0.24 5 / 0.55)",
-          }}
-        />
-
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-5 bg-gradient-to-r from-[var(--ls-card)] to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-[var(--ls-card)] to-transparent" />
-      </div>
+        className="flex-1"
+      />
       {editable ? (
         editing ? (
           <div className="flex shrink-0 items-center gap-0.5 rounded border border-white/30 bg-[var(--ls-card)] px-1.5 py-0.5 font-mono text-xs text-[var(--ls-foreground)]">
